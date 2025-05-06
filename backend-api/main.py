@@ -1,9 +1,13 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from routes import summary
 import openai
 import os
+from sqlalchemy.orm import Session
+from config import SessionLocal
+from models import TransactionDB
+from pydantic import BaseModel
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,6 +24,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Dependency to get the database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Root health check route
 @app.get("/")
@@ -62,5 +74,34 @@ async def ask_ai(request: Request):
         print(f"[OpenAI Error] {e}")
         return {"answer": "❌ Something went wrong. Please try again later."}
 
+# Pydantic model for request validation
+class TransactionCreate(BaseModel):
+    user_id: int
+    amount: float
+    description: str
+
+@app.post("/transactions/")
+def create_transaction(transaction: TransactionCreate, db: Session = Depends(get_db)):
+    db_transaction = TransactionDB(
+        user_id=transaction.user_id,
+        amount=transaction.amount,
+        description=transaction.description,
+    )
+    db.add(db_transaction)
+    db.commit()
+    db.refresh(db_transaction)
+    return db_transaction
+
+@app.get("/transactions/")
+def get_transactions(db: Session = Depends(get_db)):
+    return db.query(TransactionDB).all()
+
 # Weekly summary route
 app.include_router(summary.router, prefix="/summary", tags=["Summary"])
+
+# Example transaction data
+#example_transaction = {
+    #"user_id": 1,
+    #"amount": 100.50,
+    #"description": "Grocery shopping"
+#}
