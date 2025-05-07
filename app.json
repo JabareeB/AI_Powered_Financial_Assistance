@@ -1,0 +1,16 @@
+{
+    "expo": {
+      "name": "AI Financial Assistant",
+      "slug": "ai-financial-assistant",
+      "version": "1.0.0",
+      "scheme": "aifinancial",
+      "orientation": "portrait",
+      "platforms": ["ios", "android"],
+      "sdkVersion": "49.0.0",
+      "updates": {
+        "fallbackToCacheTimeout": 0
+      },
+      "assetBundlePatterns": ["**/*"]
+    }
+  }
+  
